@@ -121,7 +121,6 @@ function drawTree(node) {
     nodesGroup.appendChild(group);
 }
 
-// Animation State
 let isAnimating = false;
 let animationSteps = [];
 let currentStepIndex = 0;
@@ -132,7 +131,6 @@ function createIndicators(orderType) {
     indicatorsContainer.innerHTML = '';
     currentIndicators = {};
 
-    // Nombres lógicos según tu código
     const config = {
         pre: [{ key: 'root', label: 'R' }, { key: 'left', label: 'I' }, { key: 'right', label: 'D' }],
         in: [{ key: 'left', label: 'I' }, { key: 'root', label: 'R' }, { key: 'right', label: 'D' }],
@@ -186,12 +184,10 @@ async function handleNextStep() {
 
     const step = animationSteps[currentStepIndex++];
 
-    // Highlight indicator
     Object.values(currentIndicators).forEach(el => el.classList.remove('active', 'raíz', 'izquierda', 'derecha'));
     const indicator = currentIndicators[step.type];
     indicator.classList.add('active', step.type === 'root' ? 'raíz' : step.type === 'left' ? 'izquierda' : 'derecha');
 
-    // Clean up scanning for all nodes
     document.querySelectorAll('.node-scanning').forEach(el => el.classList.remove('node-scanning'));
 
     const nodeEl = document.getElementById(`node-${step.node.valor}`);
@@ -199,7 +195,7 @@ async function handleNextStep() {
     if (step.action === 'move') {
         nodeEl.classList.add('node-scanning');
     } else if (step.action === 'visit') {
-        // Remove visiting from previous
+
         document.querySelectorAll('.node-visiting').forEach(el => {
             el.classList.remove('node-visiting');
             el.classList.add('node-highlighted');
@@ -226,12 +222,12 @@ function getPreOrderSteps(node, parent, steps) {
     if (node.izquierda) {
         steps.push({ type: 'left', action: 'move', node: node.izquierda, parent: node });
         getPreOrderSteps(node.izquierda, node, steps);
-        steps.push({ type: 'root', action: 'move', node, parent }); // Move back to root
+        steps.push({ type: 'root', action: 'move', node, parent });
     }
     if (node.derecha) {
         steps.push({ type: 'right', action: 'move', node: node.derecha, parent: node });
         getPreOrderSteps(node.derecha, node, steps);
-        steps.push({ type: 'root', action: 'move', node, parent }); // Move back to root
+        steps.push({ type: 'root', action: 'move', node, parent });
     }
 }
 
@@ -271,8 +267,6 @@ function showStatus(text, isError = false) {
     if (isError) statusBubble.classList.add('error');
     setTimeout(() => statusBubble.classList.add('hidden'), 4000);
 }
-
-// Event Listeners
 addBtn.addEventListener('click', addNode);
 input.addEventListener('keypress', (e) => e.key === 'Enter' && addNode());
 resetBtn.addEventListener('click', resetTree);
