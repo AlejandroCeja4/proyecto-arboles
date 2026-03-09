@@ -1,13 +1,13 @@
 :root {
     --primary: #8b5cf6;
-    /* Morado Eléctrico para visitados */
+
     --primary-hover: #7c3aed;
     --bg-dark: #0f172a;
     --bg-card: #1e293b;
     --text-main: #f8fafc;
     --text-muted: #94a3b8;
     --accent: #d61f69;
-    /* Carmesí/Magenta (Intermedio entre Rojo y Morado) */
+
     --node-bg: #334155;
     --node-border: #475569;
     --radius: 12px;
@@ -33,7 +33,6 @@ body {
     height: 100%;
 }
 
-/* Sidebar Styling */
 .sidebar {
     width: 320px;
     background-color: var(--bg-card);
@@ -52,7 +51,6 @@ header h1 {
     line-height: 1.1;
     letter-spacing: -1px;
     margin-bottom: 0.5rem;
-    /* Espacio extra entre el nombre y el subtítulo */
 }
 
 header h1 span {
@@ -191,7 +189,6 @@ input[type="number"]:focus {
     border-color: var(--primary);
 }
 
-/* Info Panel */
 .result-box {
     background: var(--bg-dark);
     border: 1px dashed var(--node-border);
@@ -212,7 +209,6 @@ input[type="number"]:focus {
     width: 100%;
 }
 
-/* Indicators */
 .status-indicators {
     display: flex;
     justify-content: center;
