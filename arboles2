@@ -1,5 +1,6 @@
 import json
 import os
+import random
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
 
@@ -7,11 +8,13 @@ app = FastAPI(title="Arboles")
 
 SAVE_FILE = "save.json"
 
+
 class Nodo:
     def __init__(self, valor):
         self.valor = valor
         self.izquierda = None
         self.derecha = None
+        self.altura = 1
 
     def transformar_a_diccionario(self):
         return {
@@ -19,6 +22,7 @@ class Nodo:
             "izquierda": self.izquierda.transformar_a_diccionario() if self.izquierda else None,
             "derecha": self.derecha.transformar_a_diccionario() if self.derecha else None
         }
+
 
 def transformar_a_nodo(valor):
     if not valor:
@@ -28,12 +32,13 @@ def transformar_a_nodo(valor):
     nodo.derecha = transformar_a_nodo(valor["derecha"])
     return nodo
 
+
 class Arbol:
     def __init__(self):
         self.raiz = None
         self.cargar()
 
-    def insert(self, valor):
+    def insertar_balanceado(self, valor):
         if not self.raiz:
             self.raiz = Nodo(valor)
             self.guardar()
@@ -41,63 +46,126 @@ class Arbol:
         else:
             if self._exists(self.raiz, valor):
                 return False
-            self.insertar_recursivo(self.raiz, valor)
+            self.raiz = self._insertar_balanceado_recursivo(self.raiz, valor)
             self.guardar()
             return True
 
-    def _exists(self, actual, valor):
-        if not actual:
-            return False
-        if actual.valor == valor:
-            return True
-        if valor < actual.valor:
-            return self._exists(actual.izquierda, valor)
-        else:
-            return self._exists(actual.derecha, valor)
+    def _insertar_balanceado_recursivo(self, nodo, valor):
+        if nodo is None:
+            return Nodo(valor)
 
-    def insertar_recursivo(self, actual, valor):
-        if valor < actual.valor:
-            if actual.izquierda is None:
-                actual.izquierda = Nodo(valor)
-            else:
-                self.insertar_recursivo(actual.izquierda, valor)
+        if valor < nodo.valor:
+            nodo.izquierda = self._insertar_balanceado_recursivo(nodo.izquierda, valor)
         else:
-            if actual.derecha is None:
-                actual.derecha = Nodo(valor)
-            else:
-                self.insertar_recursivo(actual.derecha, valor)
+            nodo.derecha = self._insertar_balanceado_recursivo(nodo.derecha, valor)
+
+        nodo.altura = 1 + max(self._altura(nodo.izquierda), self._altura(nodo.derecha))
+
+        balance = self._balance(nodo)
+
+        if balance > 1 and valor < nodo.izquierda.valor:
+            return self._rotar_derecha(nodo)
+
+        if balance < -1 and valor > nodo.derecha.valor:
+            return self._rotar_izquierda(nodo)
+
+        if balance > 1 and valor > nodo.izquierda.valor:
+            nodo.izquierda = self._rotar_izquierda(nodo.izquierda)
+            return self._rotar_derecha(nodo)
+
+        if balance < -1 and valor < nodo.derecha.valor:
+            nodo.derecha = self._rotar_derecha(nodo.derecha)
+            return self._rotar_izquierda(nodo)
+
+        return nodo
+
+    def _altura(self, nodo):
+        if nodo is None:
+            return 0
+        return nodo.altura
+
+    def _balance(self, nodo):
+        if nodo is None:
+            return 0
+        return self._altura(nodo.izquierda) - self._altura(nodo.derecha)
+
+    def _rotar_derecha(self, y):
+        x = y.izquierda
+        T2 = x.derecha
+
+        x.derecha = y
+        y.izquierda = T2
+
+        y.altura = 1 + max(self._altura(y.izquierda), self._altura(y.derecha))
+        x.altura = 1 + max(self._altura(x.izquierda), self._altura(x.derecha))
+
+        return x
+
+    def _rotar_izquierda(self, x):
+        y = x.derecha
+        T2 = y.izquierda
+
+        y.izquierda = x
+        x.derecha = T2
+
+        x.altura = 1 + max(self._altura(x.izquierda), self._altura(x.derecha))
+        y.altura = 1 + max(self._altura(y.izquierda), self._altura(y.derecha))
+
+        return y
 
     def delete(self, valor):
         if not self._exists(self.raiz, valor):
             return False
-        self.raiz = self._delete_recursivo(self.raiz, valor)
+        self.raiz = self._eliminar_balanceado(self.raiz, valor)
         self.guardar()
         return True
 
-    def _delete_recursivo(self, nodo, valor):
+    def _eliminar_balanceado(self, nodo, valor):
         if nodo is None:
             return nodo
+
         if valor < nodo.valor:
-            nodo.izquierda = self._delete_recursivo(nodo.izquierda, valor)
+            nodo.izquierda = self._eliminar_balanceado(nodo.izquierda, valor)
         elif valor > nodo.valor:
-            nodo.derecha = self._delete_recursivo(nodo.derecha, valor)
+            nodo.derecha = self._eliminar_balanceado(nodo.derecha, valor)
         else:
-            if nodo.izquierda is None and nodo.derecha is None:
-                return None
             if nodo.izquierda is None:
                 return nodo.derecha
-            if nodo.derecha is None:
+            elif nodo.derecha is None:
                 return nodo.izquierda
-            sucesor = self._min_valor(nodo.derecha)
-            nodo.valor = sucesor.valor
-            nodo.derecha = self._delete_recursivo(nodo.derecha, sucesor.valor)
+
+            temp = self._min_valor(nodo.derecha)
+            nodo.valor = temp.valor
+            nodo.derecha = self._eliminar_balanceado(nodo.derecha, temp.valor)
+
+        if nodo is None:
+            return nodo
+
+        nodo.altura = 1 + max(self._altura(nodo.izquierda), self._altura(nodo.derecha))
+
+        balance = self._balance(nodo)
+
+        if balance > 1 and self._balance(nodo.izquierda) >= 0:
+            return self._rotar_derecha(nodo)
+
+        if balance < -1 and self._balance(nodo.derecha) <= 0:
+            return self._rotar_izquierda(nodo)
+
+        if balance > 1 and self._balance(nodo.izquierda) < 0:
+            nodo.izquierda = self._rotar_izquierda(nodo.izquierda)
+            return self._rotar_derecha(nodo)
+
+        if balance < -1 and self._balance(nodo.derecha) > 0:
+            nodo.derecha = self._rotar_derecha(nodo.derecha)
+            return self._rotar_izquierda(nodo)
+
         return nodo
 
     def _min_valor(self, nodo):
-        actual = nodo
-        while actual.izquierda is not None:
-            actual = actual.izquierda
-        return actual
+        current = nodo
+        while current.izquierda is not None:
+            current = current.izquierda
+        return current
 
     def guardar(self):
         valor = self.raiz.transformar_a_diccionario() if self.raiz else None
@@ -118,18 +186,30 @@ class Arbol:
         if os.path.exists(SAVE_FILE):
             os.remove(SAVE_FILE)
 
+    def generar_arbol_aleatorio(self, niveles):
+        self.reiniciar()
+        valores = random.sample(range(1, 1000), 2 ** niveles - 1)
+        for valor in valores:
+            self.insertar_balanceado(valor)
+
+    def obtener_nivel(self):
+        return self._altura(self.raiz) if self.raiz else 0
+
+
 arbol = Arbol()
+
 
 @app.post("/add")
 async def add_node(request: Request):
     data = await request.json()
     if "value" not in data:
         raise HTTPException(status_code=400, detail="Missing value")
-    
+
     valor = int(data["value"])
-    if not arbol.insert(valor):
+    if not arbol.insertar_balanceado(valor):
         return {"status": "error", "message": "El nodo ya existe"}
     return {"status": "success", "tree": arbol.raiz.transformar_a_diccionario() if arbol.raiz else None}
+
 
 @app.post("/delete")
 async def delete_node(request: Request):
@@ -144,17 +224,39 @@ async def delete_node(request: Request):
 
     return {"status": "success", "tree": arbol.raiz.transformar_a_diccionario() if arbol.raiz else None}
 
+
 @app.get("/tree")
 async def get_tree():
     return arbol.raiz.transformar_a_diccionario() if arbol.raiz else None
+
 
 @app.post("/reset")
 async def reset_tree():
     arbol.reiniciar()
     return {"status": "success"}
 
+
+@app.post("/generate_random_tree")
+async def generate_random_tree(request: Request):
+    data = await request.json()
+    if "levels" not in data:
+        raise HTTPException(status_code=400, detail="Missing levels")
+
+    niveles = int(data["levels"])
+
+    arbol.generar_arbol_aleatorio(niveles)
+
+    return {"status": "success", "tree": arbol.raiz.transformar_a_diccionario() if arbol.raiz else None}
+
+
+@app.get("/tree_levels")
+async def get_tree_levels():
+    return {"levels": arbol.obtener_nivel()}
+
+
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8001)
