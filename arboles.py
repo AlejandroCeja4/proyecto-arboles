@@ -1,0 +1,115 @@
+import json
+import os
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.staticfiles import StaticFiles
+
+app = FastAPI(title="Arboles")
+
+SAVE_FILE = "save.json"
+
+class Nodo:
+    def __init__(self, valor):
+        self.valor = valor
+        self.izquierda = None
+        self.derecha = None
+
+    def transformar_a_diccionario(self):
+        return {
+            "valor": self.valor,
+            "izquierda": self.izquierda.transformar_a_diccionario() if self.izquierda else None,
+            "derecha": self.derecha.transformar_a_diccionario() if self.derecha else None
+        }
+
+def transformar_a_nodo(valor):
+    if not valor:
+        return None
+    nodo = Nodo(valor["valor"])
+    nodo.izquierda = transformar_a_nodo(valor["izquierda"])
+    nodo.derecha = transformar_a_nodo(valor["derecha"])
+    return nodo
+
+class Arbol:
+    def __init__(self):
+        self.raiz = None
+        self.cargar()
+
+    def insert(self, valor):
+        if not self.raiz:
+            self.raiz = Nodo(valor)
+            self.guardar()
+            return True
+        else:
+            if self._exists(self.raiz, valor):
+                return False
+            self.insertar_recursivo(self.raiz, valor)
+            self.guardar()
+            return True
+
+    def _exists(self, actual, valor):
+        if not actual:
+            return False
+        if actual.valor == valor:
+            return True
+        if valor < actual.valor:
+            return self._exists(actual.izquierda, valor)
+        else:
+            return self._exists(actual.derecha, valor)
+
+    def insertar_recursivo(self, actual, valor):
+        if valor < actual.valor:
+            if actual.izquierda is None:
+                actual.izquierda = Nodo(valor)
+            else:
+                self.insertar_recursivo(actual.izquierda, valor)
+        else:
+            if actual.derecha is None:
+                actual.derecha = Nodo(valor)
+            else:
+                self.insertar_recursivo(actual.derecha, valor)
+
+    def guardar(self):
+        valor = self.raiz.transformar_a_diccionario() if self.raiz else None
+        with open(SAVE_FILE, "w") as f:
+            json.dump(valor, f)
+
+    def cargar(self):
+        if os.path.exists(SAVE_FILE):
+            try:
+                with open(SAVE_FILE, "r") as f:
+                    valor = json.load(f)
+                    self.raiz = transformar_a_nodo(valor)
+            except (json.JSONDecodeError, KeyError):
+                self.raiz = None
+
+    def reiniciar(self):
+        self.raiz = None
+        if os.path.exists(SAVE_FILE):
+            os.remove(SAVE_FILE)
+
+arbol = Arbol()
+
+@app.post("/add")
+async def add_node(request: Request):
+    data = await request.json()
+    if "value" not in data:
+        raise HTTPException(status_code=400, detail="Missing value")
+    
+    valor = int(data["value"])
+    if not arbol.insert(valor):
+        return {"status": "error", "message": "El nodo ya existe"}
+    return {"status": "success", "tree": arbol.raiz.transformar_a_diccionario() if arbol.raiz else None}
+
+@app.get("/tree")
+async def get_tree():
+    return arbol.raiz.transformar_a_diccionario() if arbol.raiz else None
+
+@app.post("/reset")
+async def reset_tree():
+    arbol.reiniciar()
+    return {"status": "success"}
+
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8001)
