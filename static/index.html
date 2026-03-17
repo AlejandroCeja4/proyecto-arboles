@@ -12,53 +12,69 @@
 </head>
 
 <body>
-    <div class="app-container">
-        <aside class="sidebar">
-            <header>
-                <h1>Ceja Cervantes<span>Alejandro</span></h1>
-                <p>Estructuras de datos</p>
-            </header>
+<div class="app-container">
+    <aside class="sidebar">
+        <header>
+            <h1>Ceja Cervantes<span>Alejandro</span></h1>
+            <p>Estructuras de datos</p>
+        </header>
 
-            <section class="controls">
-                <div class="input-group">
-                    <input type="number" id="node-value" placeholder="Valor" aria-label="Valor del nodo">
-                    <button id="add-btn" class="primary-btn">Añadir</button>
-                </div>
+        <section class="controls">
+            <div class="input-group">
+                <input type="number" id="node-value" placeholder="Valor" aria-label="Valor del nodo">
+                <button id="add-btn" class="primary-btn">Añadir</button>
+            </div>
 
+            <div class="actions">
+                <button id="reset-btn" class="secondary-btn">Reiniciar Árbol</button>
                 <div class="actions">
-                    <button id="reset-btn" class="secondary-btn">Reiniciar Árbol</button>
+                    <button id="balance-btn" class="secondary-btn">Árbol equilibrado</button>
+                    <button id="random-btn" class="secondary-btn">Árbol aleatorio</button>
+                    <button id="delete-btn" class="secondary-btn">Eliminar nodo</button>
+                    <button id="subtree-btn" class="secondary-btn">Eliminar subárbol</button>
                 </div>
 
-                <div class="traversals">
-                    <h3>Recorridos Manuales</h3>
-                    <div class="traversal-btns">
-                        <button data-type="pre" class="traversal-btn">Pre-orden</button>
-                        <button data-type="in" class="traversal-btn">In-orden</button>
-                        <button data-type="post" class="traversal-btn">Post-orden</button>
-                    </div>
-                    <button id="next-step-btn" class="step-btn hidden">Siguiente Paso →</button>
+                <div class="input-group">
+                    <input type="text" id="expression-input" placeholder="Expresión matemática">
+                    <button id="expression-btn" class="primary-btn">Crear árbol</button>
                 </div>
-            </section>
 
-            <section class="info-panel">
-                <div id="indicators-container" class="status-indicators">
-                    <!-- Dinámico -->
+                <div class="input-group">
+                    <input type="file" id="json-file">
+                    <button id="load-json-btn" class="primary-btn">Cargar JSON</button>
                 </div>
-                <div id="traversal-result" class="result-box">
-                    <!-- Sin placeholders -->
-                </div>
-            </section>
-        </aside>
+            </div>
 
-        <main class="canvas-area">
-            <svg id="tree-svg">
-                <g id="links-group"></g>
-                <g id="nodes-group"></g>
-            </svg>
-            <div id="status-bubble" class="hidden"></div>
-        </main>
-    </div>
-    <script src="script.js"></script>
+            <div class="traversals">
+                <h3>Recorridos Manuales</h3>
+                <div class="traversal-btns">
+                    <button data-type="pre" class="traversal-btn">Pre-orden</button>
+                    <button data-type="in" class="traversal-btn">In-orden</button>
+                    <button data-type="post" class="traversal-btn">Post-orden</button>
+                </div>
+                <button id="next-step-btn" class="step-btn hidden">Siguiente Paso →</button>
+            </div>
+        </section>
+
+        <section class="info-panel">
+            <div id="indicators-container" class="status-indicators">
+                <!-- Dinámico -->
+            </div>
+            <div id="traversal-result" class="result-box">
+                <!-- Sin placeholders -->
+            </div>
+        </section>
+    </aside>
+
+    <main class="canvas-area">
+        <svg id="tree-svg">
+            <g id="links-group"></g>
+            <g id="nodes-group"></g>
+        </svg>
+        <div id="status-bubble" class="hidden"></div>
+    </main>
+</div>
+<script src="script.js"></script>
 </body>
 
 </html>
