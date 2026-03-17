@@ -47,8 +47,80 @@ async function resetTree() {
     traversalResult.innerHTML = '';
     showStatus('Árbol reiniciado');
     stopAnimation();
+
+}
+async function balanceTree(){
+    const response = await fetch('/balance', {method:'POST'});
+    treeData = await response.json();
+    renderTree();
+    showStatus("Árbol equilibrado");
 }
 
+async function randomTree(){
+    const response = await fetch('/random', {method:'POST'});
+    treeData = await response.json();
+    renderTree();
+    showStatus("Árbol aleatorio generado");
+}
+
+async function deleteNode(){
+    const value = parseInt(input.value);
+    if(isNaN(value)) return;
+
+    const response = await fetch('/delete',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({value})
+    });
+
+    treeData = await response.json();
+    renderTree();
+    showStatus("Nodo eliminado");
+}
+
+async function deleteSubtree(){
+    const value = parseInt(input.value);
+    if(isNaN(value)) return;
+
+    const response = await fetch('/subtree',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({value})
+    });
+
+    treeData = await response.json();
+    renderTree();
+    showStatus("Subárbol eliminado");
+}
+
+async function createExpressionTree(){
+    const expr = document.getElementById("expression-input").value;
+
+    const response = await fetch('/expression',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({expr})
+    });
+
+    treeData = await response.json();
+    renderTree();
+    showStatus("Árbol de expresión creado");
+}
+
+async function loadJSON(){
+    const file = document.getElementById("json-file").files[0];
+    const text = await file.text();
+
+    const response = await fetch('/load_json',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:text
+    });
+
+    treeData = await response.json();
+    renderTree();
+    showStatus("JSON cargado");
+}
 function renderTree() {
     linksGroup.innerHTML = '';
     nodesGroup.innerHTML = '';
@@ -285,4 +357,10 @@ document.querySelectorAll('.traversal-btn').forEach(btn => {
 });
 
 window.addEventListener('resize', renderTree);
+document.getElementById("balance-btn").addEventListener("click",balanceTree);
+document.getElementById("random-btn").addEventListener("click",randomTree);
+document.getElementById("delete-btn").addEventListener("click",deleteNode);
+document.getElementById("subtree-btn").addEventListener("click",deleteSubtree);
+document.getElementById("expression-btn").addEventListener("click",createExpressionTree);
+document.getElementById("load-json-btn").addEventListener("click",loadJSON);
 fetchTree();
