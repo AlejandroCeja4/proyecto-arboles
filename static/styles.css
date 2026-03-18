@@ -38,12 +38,13 @@ body {
     width: 320px;
     background-color: var(--bg-card);
     border-right: 1px solid rgba(255, 255, 255, 0.05);
-    padding: 2.5rem 2rem;
+    padding: 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.5rem;
     z-index: 10;
     box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
+    overflow-y: auto;
 }
 
 header h1 {
@@ -75,7 +76,36 @@ header p {
 .controls {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 2rem;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.control-group h3 {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.25rem;
+}
+
+.button-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.button-grid button {
+    padding: 0.6rem;
+    font-size: 0.85rem;
+}
+
+.button-grid #reset-btn {
+    grid-column: span 2;
 }
 
 .input-group {
@@ -105,7 +135,9 @@ input[type="number"]:focus {
 
 .primary-btn,
 .secondary-btn,
-.traversal-btn {
+.traversal-btn,
+.danger-btn,
+.accent-btn {
     cursor: pointer;
     border: none;
     border-radius: var(--radius);
@@ -113,6 +145,10 @@ input[type="number"]:focus {
     font-family: inherit;
     font-weight: 600;
     transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
 }
 
 .primary-btn {
@@ -157,6 +193,29 @@ input[type="number"]:focus {
 
 .secondary-btn:hover {
     background: rgba(239, 68, 68, 0.2);
+}
+
+.danger-btn {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.danger-btn:hover {
+    background: #ef4444;
+    color: white;
+}
+
+.accent-btn {
+    background: #10b981;
+    color: white;
+    width: 100%;
+    margin-top: 0.5rem;
+}
+
+.accent-btn:hover {
+    background: #059669;
+    transform: translateY(-2px);
 }
 
 .traversals h3 {
@@ -298,13 +357,34 @@ input[type="number"]:focus {
 .canvas-area {
     flex: 1;
     position: relative;
-    overflow: hidden;
+    overflow: auto;
     background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+    display: block; /* Volvemos a block para que el scroll funcione mejor con hijos absolute/svg */
+    padding: 2rem;
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--node-border);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
 }
 
 #tree-svg {
-    width: 100%;
-    height: 100%;
+    /* Permitimos que los atributos width/height de JS controlen el tamaño */
+    display: block;
 }
 
 .node-circle {
@@ -382,7 +462,79 @@ input[type="number"]:focus {
 }
 
 .hidden {
-    opacity: 0;
-    transform: translateY(-20px);
-    pointer-events: none;
+    display: none !important;
+}
+
+/* Variables Panel */
+.variables-panel {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--node-border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    margin-top: 0.5rem;
+}
+
+.variables-panel h4 {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+}
+
+#variables-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.var-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.var-input-group label {
+    font-weight: 600;
+    color: var(--primary);
+    min-width: 1.5rem;
+}
+
+.var-input-group input {
+    background: var(--bg-dark);
+    border: 1px solid var(--node-border);
+    border-radius: 6px;
+    padding: 0.4rem;
+    color: white;
+    width: 100%;
+}
+
+.eval-result {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-weight: 600;
+    text-align: center;
+    color: #10b981;
+}
+
+.file-input-wrapper {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.file-label {
+    flex: 1;
+    background: var(--bg-dark);
+    border: 1px dashed var(--node-border);
+    padding: 0.75rem;
+    border-radius: var(--radius);
+    text-align: center;
+    font-size: 0.8rem;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+
+.file-label:hover {
+    border-color: var(--primary);
+    color: var(--text-main);
 }

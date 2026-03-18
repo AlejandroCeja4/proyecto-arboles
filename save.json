@@ -1,0 +1,1 @@
+{"valor": "+", "izquierda": {"valor": "X", "izquierda": null, "derecha": null}, "derecha": {"valor": "*", "izquierda": {"valor": "2", "izquierda": null, "derecha": null}, "derecha": {"valor": "^", "izquierda": {"valor": "X", "izquierda": null, "derecha": null}, "derecha": {"valor": "2", "izquierda": null, "derecha": null}}}}

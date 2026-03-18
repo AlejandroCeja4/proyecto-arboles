@@ -93,18 +93,60 @@ async function deleteSubtree(){
     showStatus("Subárbol eliminado");
 }
 
-async function createExpressionTree(){
+async function createExpressionTree() {
     const expr = document.getElementById("expression-input").value;
+    if (!expr) return;
 
-    const response = await fetch('/expression',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({expr})
+    const response = await fetch('/expression', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ expr })
     });
 
-    treeData = await response.json();
+    const result = await response.json();
+    treeData = result.tree;
     renderTree();
     showStatus("Árbol de expresión creado");
+
+    setupVariables(result.variables);
+}
+
+function setupVariables(variables) {
+    const container = document.getElementById("variables-container");
+    const inputsDiv = document.getElementById("variables-inputs");
+    inputsDiv.innerHTML = '';
+
+    if (variables && variables.length > 0) {
+        container.classList.remove("hidden");
+        variables.forEach(v => {
+            const group = document.createElement("div");
+            group.className = "var-input-group";
+            group.innerHTML = `
+                <label>${v}</label>
+                <input type="number" data-var="${v}" value="0">
+            `;
+            inputsDiv.appendChild(group);
+        });
+    } else {
+        container.classList.add("hidden");
+    }
+}
+
+async function evaluateExpression() {
+    const inputs = document.querySelectorAll("#variables-inputs input");
+    const values = {};
+    inputs.forEach(input => {
+        values[input.dataset.var] = parseFloat(input.value) || 0;
+    });
+
+    const response = await fetch('/evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values })
+    });
+
+    const result = await response.json();
+    document.getElementById("evaluation-result").textContent = `Resultado: ${result.result}`;
 }
 
 async function loadJSON(){
@@ -121,26 +163,55 @@ async function loadJSON(){
     renderTree();
     showStatus("JSON cargado");
 }
+const HORIZONTAL_SPACING_BASE = 50;
+
 function renderTree() {
     linksGroup.innerHTML = '';
     nodesGroup.innerHTML = '';
     if (!treeData) return;
 
-    const width = svg.clientWidth || window.innerWidth - 320;
-    calculatePositions(treeData, width / 2, 60, width / 4);
+    // Calculate depth to adjust height
+    const getDepth = (node) => {
+        if (!node) return 0;
+        return 1 + Math.max(getDepth(node.izquierda), getDepth(node.derecha));
+    };
+    const depth = getDepth(treeData);
+    
+    // Total displacement from root to leaf
+    let initialSpacing = Math.pow(2, depth - 2) * HORIZONTAL_SPACING_BASE;
+    if (depth <= 1) initialSpacing = 0;
+    
+    let totalDisplacement = 0;
+    let tempSpacing = initialSpacing;
+    for (let i = 0; i < depth - 1; i++) {
+        totalDisplacement += tempSpacing;
+        tempSpacing /= 2;
+    }
+
+    const margin = 100;
+    const requiredWidth = totalDisplacement * 2 + margin * 2;
+    const svgWidth = Math.max(window.innerWidth - 320, requiredWidth);
+    const svgHeight = Math.max(500, (depth + 1) * VERTICAL_SPACING + 100);
+
+    svg.setAttribute("width", svgWidth);
+    svg.setAttribute("height", svgHeight);
+
+    // Initial X: Center the tree in the calculated width
+    calculatePositions(treeData, svgWidth / 2, 60, initialSpacing);
     drawTree(treeData);
 }
 
-function calculatePositions(node, x, y, spacing) {
+function calculatePositions(node, x, y, spacing, id = "root") {
     if (!node) return;
+    node.id = id;
     node.x = x;
     node.y = y;
 
     if (node.izquierda) {
-        calculatePositions(node.izquierda, x - spacing, y + VERTICAL_SPACING, spacing / 2);
+        calculatePositions(node.izquierda, x - spacing, y + VERTICAL_SPACING, spacing / 2, id + "L");
     }
     if (node.derecha) {
-        calculatePositions(node.derecha, x + spacing, y + VERTICAL_SPACING, spacing / 2);
+        calculatePositions(node.derecha, x + spacing, y + VERTICAL_SPACING, spacing / 2, id + "R");
     }
 }
 
@@ -153,7 +224,7 @@ function drawTree(node) {
         line.setAttribute("y1", node.y);
         line.setAttribute("x2", node.izquierda.x);
         line.setAttribute("y2", node.izquierda.y);
-        line.setAttribute("id", `link-${node.valor}-${node.izquierda.valor}`);
+        line.setAttribute("id", `link-${node.id}-${node.izquierda.id}`);
         line.classList.add("node-link");
         linksGroup.appendChild(line);
         drawTree(node.izquierda);
@@ -164,7 +235,7 @@ function drawTree(node) {
         line.setAttribute("y1", node.y);
         line.setAttribute("x2", node.derecha.x);
         line.setAttribute("y2", node.derecha.y);
-        line.setAttribute("id", `link-${node.valor}-${node.derecha.valor}`);
+        line.setAttribute("id", `link-${node.id}-${node.derecha.id}`);
         line.classList.add("node-link");
         linksGroup.appendChild(line);
         drawTree(node.derecha);
@@ -172,7 +243,7 @@ function drawTree(node) {
 
     const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
     group.classList.add("node-element");
-    group.setAttribute("id", `node-${node.valor}`);
+    group.setAttribute("id", `node-${node.id}`);
 
     const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     circle.setAttribute("cx", node.x);
@@ -266,7 +337,7 @@ async function handleNextStep() {
     // Clean up scanning for all nodes
     document.querySelectorAll('.node-scanning').forEach(el => el.classList.remove('node-scanning'));
 
-    const nodeEl = document.getElementById(`node-${step.node.valor}`);
+    const nodeEl = document.getElementById(`node-${step.node.id}`);
 
     if (step.action === 'move') {
         nodeEl.classList.add('node-scanning');
@@ -280,7 +351,7 @@ async function handleNextStep() {
         nodeEl.classList.add('node-visiting');
 
         if (step.parent) {
-            const link = document.getElementById(`link-${step.parent.valor}-${step.node.valor}`);
+            const link = document.getElementById(`link-${step.parent.id}-${step.node.id}`);
             if (link) link.classList.add('highlighted');
         }
 
@@ -357,10 +428,18 @@ document.querySelectorAll('.traversal-btn').forEach(btn => {
 });
 
 window.addEventListener('resize', renderTree);
-document.getElementById("balance-btn").addEventListener("click",balanceTree);
-document.getElementById("random-btn").addEventListener("click",randomTree);
-document.getElementById("delete-btn").addEventListener("click",deleteNode);
-document.getElementById("subtree-btn").addEventListener("click",deleteSubtree);
-document.getElementById("expression-btn").addEventListener("click",createExpressionTree);
-document.getElementById("load-json-btn").addEventListener("click",loadJSON);
+document.getElementById("balance-btn").addEventListener("click", balanceTree);
+document.getElementById("random-btn").addEventListener("click", randomTree);
+document.getElementById("delete-btn").addEventListener("click", deleteNode);
+document.getElementById("subtree-btn").addEventListener("click", deleteSubtree);
+document.getElementById("expression-btn").addEventListener("click", createExpressionTree);
+document.getElementById("evaluate-btn").addEventListener("click", evaluateExpression);
+document.getElementById("load-json-btn").addEventListener("click", loadJSON);
+
+// File input label sync
+document.getElementById("json-file").addEventListener("change", (e) => {
+    const label = document.querySelector(".file-label");
+    label.textContent = e.target.files[0]?.name || "Seleccionar JSON";
+});
+
 fetchTree();

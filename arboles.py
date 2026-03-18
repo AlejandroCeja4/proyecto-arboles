@@ -29,6 +29,14 @@ def transformar_a_nodo(valor):
     nodo.derecha = transformar_a_nodo(valor["derecha"])
     return nodo
 
+def extraer_variables(nodo, vars_set):
+    if not nodo:
+        return
+    if str(nodo.valor).isalpha():
+        vars_set.add(nodo.valor)
+    extraer_variables(nodo.izquierda, vars_set)
+    extraer_variables(nodo.derecha, vars_set)
+
 class Arbol:
     def __init__(self):
         self.raiz = None
@@ -158,55 +166,100 @@ class Arbol:
         for i in nums:
             self.insert(i)
     def arbol_expresion(self, expr):
-
         def precedencia(op):
             if op in ('+', '-'): return 1
             if op in ('*', '/'): return 2
+            if op in ('^'): return 3
             return 0
+
+        # Tokenizador simple
+        import re
+        raw_tokens = re.findall(r'\d+\.?\d*|[a-zA-Z]|[+/*^-]|\(|\)', expr.replace(" ", ""))
+
+        # Manejar multiplicación implícita y signos unarios
+        tokens = []
+        for i in range(len(raw_tokens)):
+            curr = raw_tokens[i]
+
+            # Casos de signo unario: '-' o '+' al inicio o después de '('
+            if curr in ('-', '+'):
+                if i == 0 or raw_tokens[i-1] == '(':
+                    tokens.append('0')
+
+            tokens.append(curr)
+
+            if i + 1 < len(raw_tokens):
+                nxt = raw_tokens[i+1]
+                
+                # Casos de multiplicación implícita:
+                # 1. Número/Variable seguido de Variable/Paréntesis abierto: 5X, XY, 5(, X(
+                # 2. Paréntesis cerrado seguido de Número/Variable/Paréntesis abierto: )5, )X, )(
+                
+                cond1 = (curr.replace(".", "").isdigit() or curr.isalpha() or curr == ')')
+                cond2 = (nxt.replace(".", "").isdigit() or nxt.isalpha() or nxt == '(')
+                
+                if cond1 and cond2:
+                    if not (curr.replace(".", "").isdigit() and nxt.replace(".", "").isdigit()):
+                         tokens.append('*')
 
         # Convertir a postfijo (Shunting Yard)
         salida = []
         pila = []
-        numero = ""
 
-        for c in expr:
-            if c.isdigit():
-                numero += c
+        for token in tokens:
+            if token.replace(".", "").isdigit() or token.isalpha():
+                salida.append(token)
+            elif token == '(':
+                pila.append(token)
+            elif token == ')':
+                while pila and pila[-1] != '(':
+                    salida.append(pila.pop())
+                if pila: pila.pop()
             else:
-                if numero:
-                    salida.append(numero)
-                    numero = ""
-
-                if c == '(':
-                    pila.append(c)
-                elif c == ')':
-                    while pila and pila[-1] != '(':
-                        salida.append(pila.pop())
-                    pila.pop()
-                else:
-                    while pila and precedencia(pila[-1]) >= precedencia(c):
-                        salida.append(pila.pop())
-                    pila.append(c)
-
-        if numero:
-            salida.append(numero)
+                while pila and pila[-1] != '(' and precedencia(pila[-1]) >= precedencia(token):
+                    salida.append(pila.pop())
+                pila.append(token)
 
         while pila:
             salida.append(pila.pop())
 
         # Construir árbol desde postfijo
         stack = []
-
         for token in salida:
-            if token.isdigit():
+            if token.replace(".", "").isdigit() or token.isalpha():
                 stack.append(Nodo(token))
             else:
+                if len(stack) < 2: continue
                 nodo = Nodo(token)
                 nodo.derecha = stack.pop()
                 nodo.izquierda = stack.pop()
                 stack.append(nodo)
 
-        self.raiz = stack[0]
+        if stack:
+            self.raiz = stack[0]
+            self.guardar()
+
+    def evaluar(self, vars_values):
+        def _evaluar_rec(nodo):
+            if not nodo:
+                return 0
+            val = str(nodo.valor)
+            if val.replace(".", "").isdigit():
+                return float(val)
+            if val.isalpha():
+                return float(vars_values.get(val, 0))
+
+            izq = _evaluar_rec(nodo.izquierda)
+            der = _evaluar_rec(nodo.derecha)
+
+            if val == '+': return izq + der
+            if val == '-': return izq - der
+            if val == '*': return izq * der
+            if val == '/': return izq / der if der != 0 else 0
+            if val == '^': return izq ** der
+            return 0
+
+        return _evaluar_rec(self.raiz)
 arbol = Arbol()
 
 @app.post("/add")
@@ -258,7 +311,19 @@ async def random_tree():
 async def expression(request:Request):
     data=await request.json()
     arbol.arbol_expresion(data["expr"])
-    return arbol.raiz.transformar_a_diccionario()
+    variables = set()
+    extraer_variables(arbol.raiz, variables)
+    return {
+        "tree": arbol.raiz.transformar_a_diccionario(),
+        "variables": list(variables)
+    }
+
+@app.post("/evaluate")
+async def evaluate(request:Request):
+    data = await request.json()
+    values = data.get("values", {})
+    result = arbol.evaluar(values)
+    return {"result": result}
 
 
 @app.post("/load_json")

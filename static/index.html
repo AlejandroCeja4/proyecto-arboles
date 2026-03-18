@@ -15,33 +15,46 @@
 <div class="app-container">
     <aside class="sidebar">
         <header>
-            <h1>Ceja Cervantes<span>Alejandro</span></h1>
+            <h1>Diagrama de <span>Arboles</span></h1>
             <p>Estructuras de datos</p>
         </header>
 
         <section class="controls">
-            <div class="input-group">
-                <input type="number" id="node-value" placeholder="Valor" aria-label="Valor del nodo">
-                <button id="add-btn" class="primary-btn">Añadir</button>
+            <div class="control-group">
+                <h3>Gestión de Nodos</h3>
+                <div class="input-group">
+                    <input type="number" id="node-value" placeholder="Valor" aria-label="Valor del nodo">
+                    <button id="add-btn" class="primary-btn">Aañadir</button>
+                </div>
+                <div class="button-grid">
+                    <button id="delete-btn" class="secondary-btn">Eliminar Nodo</button>
+                    <button id="subtree-btn" class="secondary-btn">Eliminar Subárbol</button>
+                    <button id="balance-btn" class="secondary-btn">Equilibrar</button>
+                    <button id="random-btn" class="secondary-btn">Aleatorio</button>
+                    <button id="reset-btn" class="danger-btn">Reiniciar Todo</button>
+                </div>
             </div>
 
-            <div class="actions">
-                <button id="reset-btn" class="secondary-btn">Reiniciar Árbol</button>
-                <div class="actions">
-                    <button id="balance-btn" class="secondary-btn">Árbol equilibrado</button>
-                    <button id="random-btn" class="secondary-btn">Árbol aleatorio</button>
-                    <button id="delete-btn" class="secondary-btn">Eliminar nodo</button>
-                    <button id="subtree-btn" class="secondary-btn">Eliminar subárbol</button>
-                </div>
-
+            <div class="control-group">
+                <h3>Expresiones</h3>
                 <div class="input-group">
-                    <input type="text" id="expression-input" placeholder="Expresión matemática">
-                    <button id="expression-btn" class="primary-btn">Crear árbol</button>
+                    <input type="text" id="expression-input" placeholder="Ej: (X + 2) ^ 2">
+                    <button id="expression-btn" class="primary-btn">Generar</button>
                 </div>
+                <div id="variables-container" class="variables-panel hidden">
+                    <h4>Variables detectadas</h4>
+                    <div id="variables-inputs"></div>
+                    <button id="evaluate-btn" class="accent-btn">Evaluar Expresión</button>
+                    <div id="evaluation-result" class="eval-result"></div>
+                </div>
+            </div>
 
-                <div class="input-group">
-                    <input type="file" id="json-file">
-                    <button id="load-json-btn" class="primary-btn">Cargar JSON</button>
+            <div class="control-group">
+                <h3>Importar</h3>
+                <div class="file-input-wrapper">
+                    <input type="file" id="json-file" class="hidden">
+                    <label for="json-file" class="file-label">Seleccionar JSON</label>
+                    <button id="load-json-btn" class="primary-btn">Cargar</button>
                 </div>
             </div>
 
