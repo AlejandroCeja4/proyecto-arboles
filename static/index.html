@@ -21,8 +21,15 @@
 
             <section class="controls">
                 <div class="input-group">
-                    <input type="number" id="node-value" placeholder="Valor" aria-label="Valor del nodo">
+                    <input type="text" id="node-value" placeholder="Ej: 3x^2, 5x, 7"
+                        aria-label="Expresión del nodo">
                     <button id="add-btn" class="primary-btn">Añadir</button>
+                </div>
+
+                <div class="input-group">
+                    <input type="number" id="x-value" placeholder="Valor de x"
+                        aria-label="Valor de x">
+                    <button id="evaluate-btn" class="primary-btn">Evaluar</button>
                 </div>
 
                 <div class="actions">
@@ -41,12 +48,13 @@
             </section>
 
             <section class="info-panel">
-                <div id="indicators-container" class="status-indicators">
-                    <!-- Dinámico -->
-                </div>
-                <div id="traversal-result" class="result-box">
-                    <!-- Sin placeholders -->
-                </div>
+                <div id="indicators-container" class="status-indicators"></div>
+
+                <div id="traversal-result" class="result-box"></div>
+
+                <div id="evaluation-result" class="result-box"></div>
+
+                <div id="error-box" class="result-box error hidden"></div>
             </section>
         </aside>
 
@@ -58,7 +66,142 @@
             <div id="status-bubble" class="hidden"></div>
         </main>
     </div>
-    <script src="script.js"></script>
+
+    <script>
+        const API = "";
+
+        const nodeInput = document.getElementById("node-value");
+        const xInput = document.getElementById("x-value");
+        const addBtn = document.getElementById("add-btn");
+        const evalBtn = document.getElementById("evaluate-btn");
+        const resetBtn = document.getElementById("reset-btn");
+
+        const errorBox = document.getElementById("error-box");
+        const evalBox = document.getElementById("evaluation-result");
+
+        function showError(message) {
+            errorBox.textContent = message;
+            errorBox.classList.remove("hidden");
+        }
+
+        function clearError() {
+            errorBox.textContent = "";
+            errorBox.classList.add("hidden");
+        }
+
+        async function addNode() {
+            clearError();
+
+            const value = nodeInput.value.trim();
+
+            if (!value) {
+                showError("Debe ingresar una expresión");
+                return;
+            }
+
+            try {
+                const res = await fetch(API + "/add", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({ value })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showError(data.detail || "Error al agregar");
+                    return;
+                }
+
+                if (data.status === "error") {
+                    showError(data.message);
+                    return;
+                }
+
+                nodeInput.value = "";
+                loadTree();
+
+            } catch (error) {
+                showError("Error de conexión con el servidor");
+            }
+        }
+
+        async function evaluateTree() {
+            clearError();
+
+            const x = xInput.value;
+
+            if (x === "") {
+                showError("Debe ingresar un valor de x");
+                return;
+            }
+
+            try {
+                const res = await fetch(API + "/evaluate", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({ x })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showError(data.detail || "Error al evaluar");
+                    return;
+                }
+
+                renderEvaluation(data.resultados);
+
+            } catch (error) {
+                showError("Error al conectar con el servidor");
+            }
+        }
+
+        function renderEvaluation(resultados) {
+            evalBox.innerHTML = "";
+
+            resultados.forEach(item => {
+                const div = document.createElement("div");
+
+                if (item.error) {
+                    div.textContent = `${item.expresion} → Error: ${item.error}`;
+                    div.style.color = "red";
+                } else {
+                    div.textContent = `${item.expresion} = ${item.resultado}`;
+                }
+
+                evalBox.appendChild(div);
+            });
+        }
+
+        async function resetTree() {
+            clearError();
+
+            try {
+                await fetch(API + "/reset", { method: "POST" });
+                evalBox.innerHTML = "";
+                loadTree();
+            } catch (error) {
+                showError("Error al reiniciar");
+            }
+        }
+
+        async function loadTree() {
+            try {
+                const res = await fetch(API + "/tree");
+                const data = await res.json();
+                console.log("Tree:", data);
+            } catch (error) {
+                showError("Error al cargar el árbol");
+            }
+        }
+
+        addBtn.addEventListener("click", addNode);
+        evalBtn.addEventListener("click", evaluateTree);
+        resetBtn.addEventListener("click", resetTree);
+
+        loadTree();
+    </script>
 </body>
 
 </html>
